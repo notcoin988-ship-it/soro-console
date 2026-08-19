@@ -111,7 +111,13 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
-    credentials: "include",
+    // credentials НЕ включаем: консоль не использует куки, банк
+    // определяется заголовком X-Workspace. При обращении с другого
+    // домена (выложенная консоль → бэкенд за туннелем) режим "include"
+    // требует от сервера Access-Control-Allow-Credentials: true, а
+    // выдавать его вместе с конкретным origin — лишнее послабление ради
+    // кук, которых нет. Браузер иначе блокирует все запросы на preflight.
+    credentials: "same-origin",
     ...init,
     // Заголовки идут ПОСЛЕ ...init намеренно: иначе вызов со своими
     // заголовками (загрузка файла) затирал бы X-Workspace, и документ
@@ -162,7 +168,13 @@ export async function uploadFile(file: File): Promise<Doc> {
   // Content-Type не ставим руками: браузер сам добавит boundary для multipart
   const response = await fetch(`${API_BASE}/documents`, {
     method: "POST",
-    credentials: "include",
+    // credentials НЕ включаем: консоль не использует куки, банк
+    // определяется заголовком X-Workspace. При обращении с другого
+    // домена (выложенная консоль → бэкенд за туннелем) режим "include"
+    // требует от сервера Access-Control-Allow-Credentials: true, а
+    // выдавать его вместе с конкретным origin — лишнее послабление ради
+    // кук, которых нет. Браузер иначе блокирует все запросы на preflight.
+    credentials: "same-origin",
     headers: workspaceHeader(),
     body: form,
   });
@@ -487,7 +499,13 @@ export function setSecurity(
 export async function deleteDocument(id: number): Promise<void> {
   const response = await fetch(`${API_BASE}/documents/${id}`, {
     method: "DELETE",
-    credentials: "include",
+    // credentials НЕ включаем: консоль не использует куки, банк
+    // определяется заголовком X-Workspace. При обращении с другого
+    // домена (выложенная консоль → бэкенд за туннелем) режим "include"
+    // требует от сервера Access-Control-Allow-Credentials: true, а
+    // выдавать его вместе с конкретным origin — лишнее послабление ради
+    // кук, которых нет. Браузер иначе блокирует все запросы на preflight.
+    credentials: "same-origin",
     headers: workspaceHeader(),
   });
   if (!response.ok) throw new ApiError(response.status, await response.text());
@@ -499,7 +517,7 @@ export async function deleteDocument(id: number): Promise<void> {
 export async function deleteSite(host: string): Promise<{ deleted: number }> {
   const response = await fetch(
     `${API_BASE}/documents?host=${encodeURIComponent(host)}`,
-    { method: "DELETE", credentials: "include", headers: workspaceHeader() },
+    { method: "DELETE", credentials: "same-origin", headers: workspaceHeader() },
   );
   if (!response.ok) throw new ApiError(response.status, await response.text());
   return (await response.json()) as { deleted: number };
