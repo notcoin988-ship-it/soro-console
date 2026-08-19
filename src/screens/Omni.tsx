@@ -62,7 +62,7 @@ const OMNI: Beat[] = [
     dev: "Web",
     cls: "sys",
     html:
-      "21:05 · Далер авторизовался на eskhata.tj — история подтянулась из " +
+      "21:05 · Далер авторизовался на сайте банка — история подтянулась из " +
       "Telegram",
     step: 2,
     wake: "Web",
@@ -159,14 +159,14 @@ const DEVICES: { id: Dev; icon: string; color: string; title: string; where: str
       id: "Tg",
       icon: "TG",
       color: "var(--tg)",
-      title: "Telegram · @EskhataDemoBot",
+      title: "Telegram · демо-бот",
       where: "телефон",
     },
     {
       id: "Web",
       icon: "W",
       color: "var(--rose)",
-      title: "Виджет на eskhata.tj",
+      title: "Виджет на сайте банка",
       where: "компьютер",
     },
     {
@@ -187,7 +187,7 @@ const STEPS = [
   {
     n: 2,
     title: "Продолжение на сайте",
-    hint: "вечером открывает eskhata.tj — виджет помнит диалог",
+    hint: "вечером открывает сайт банка — виджет помнит диалог",
   },
   {
     n: 3,

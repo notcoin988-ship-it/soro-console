@@ -388,7 +388,7 @@ export default function Playground() {
               {model || "модель…"}
             </span>
             <span style={{ color: "var(--muted2)" }}>·</span>
-            <span>База знаний: Банк Эсхата</span>
+            <span>База знаний: Demo Bank</span>
           </div>
 
           <div className="chatlog" ref={logRef}>
