@@ -3,11 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Консоль Soro Business — 7 экранов, эталон soro-business-console-2.html",
+  "description": "Консоль Soro Business — интерфейс платформы AI Banking Intelligence",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "node deploy.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
