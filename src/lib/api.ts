@@ -54,6 +54,23 @@ const ORIGIN = resolveOrigin();
 
 export const API_BASE = `${ORIGIN}/api`;
 
+/** Куда сейчас ходит консоль. Пусто — на свой же адрес. */
+export function apiOrigin(): string {
+  return ORIGIN;
+}
+
+/** Задать адрес бэкенда вручную и перезагрузиться.
+ *
+ *  Нужно, когда консоль открыли без `?api=`: без адреса она стучится на
+ *  свой же хост, где API нет, и все экраны молча висят в состоянии
+ *  загрузки. Человек на встрече решает, что продукт сломан. */
+export function setApiOrigin(value: string): void {
+  const clean = value.trim().replace(/\/$/, "");
+  if (clean) localStorage.setItem("soro_api", clean);
+  else localStorage.removeItem("soro_api");
+  window.location.reload();
+}
+
 /** Адрес WebSocket инбокса. Выводится из того же ORIGIN: http → ws. */
 export function socketOrigin(): string {
   if (!ORIGIN) return `ws://${location.host}`;

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import {
   ApiError,
   WorkspaceInfo,
@@ -22,6 +22,7 @@ import Executive from "./screens/Executive";
 import AIReports from "./screens/AIReports";
 import Security from "./screens/Security";
 import KillerDemo from "./screens/KillerDemo";
+import Offline from "./components/Offline";
 
 // Каркас консоли повторяет прототип: topbar, боковая навигация с номерами
 // экранов и футером параметров, справа — экран. Идентификаторы те же, что
@@ -252,14 +253,29 @@ export default function App() {
   const [mode, setMode] = useState<Mode>("ops");
   const [info, setInfo] = useState<WorkspaceInfo | null>(null);
 
+  // Достучались ли до бэкенда. Отдельно от `info`, потому что `null` там
+  // бывает и в первую секунду загрузки — а плашку «сервер не отвечает»
+  // показывать в этот момент нельзя, она мигала бы при каждом переходе.
+  const [offline, setOffline] = useState(false);
+
   // Подпись в футере навигации должна отражать факт, а не эталон: там
   // зашиты «Soro-27B · FP8» и «Аудит-лог включён», а на сервере GPTQ-int4,
   // и аудит теперь выключается переключателем на экране 01.
-  useEffect(() => {
+  const loadInfo = useCallback(() => {
     getWorkspace()
-      .then(setInfo)
-      .catch(() => setInfo(null));
-  }, [current]);
+      .then((data) => {
+        setInfo(data);
+        setOffline(false);
+      })
+      .catch(() => {
+        setInfo(null);
+        setOffline(true);
+      });
+  }, []);
+
+  useEffect(() => {
+    loadInfo();
+  }, [current, loadInfo]);
 
   // Смена режима не должна оставлять пользователя на экране, которого в
   // новом режиме нет: иначе главная область пустеет, а меню показывает,
@@ -280,6 +296,12 @@ export default function App() {
         <Nav current={current} onPick={setCurrent} info={info} mode={mode} />
 
         <main>
+          {/* Плашка стоит НАД экраном, а не вместо него: экран «Демо»
+              работает без сервера, и подменять его сообщением об ошибке
+              значило бы отнять у презентатора единственное, что осталось
+              рабочим, когда стенд недоступен. */}
+          {offline && <Offline onRetry={loadInfo} />}
+
           {visibleScreens(mode).map(({ id, Component }) => (
             <section key={id} className={`screen ${id === current ? "on" : ""}`} id={id}>
               {/* onOpen позволяет экрану увести на другой: с дашборда — в

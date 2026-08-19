@@ -742,3 +742,34 @@ nav button.accent .n { color: var(--rose-hi); }
   text-underline-offset: 3px;
 }
 .techtog:hover { color: var(--rose-hi); }
+
+/* ============ бэкенд недоступен ============ */
+
+/* Плашка поверх экранов, когда консоль не может достучаться до сервера.
+   Стоит НАД содержимым, а не вместо него: экран «Демо» работает без
+   сервера, и уводить с него человека нельзя. */
+.offline {
+  margin-bottom: 16px; padding: 15px 17px;
+  border: 1px solid var(--brass); border-left: 2px solid var(--brass);
+  border-radius: var(--r); background: var(--brass-wash);
+}
+.offhead {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 9px;
+  font-size: 13.5px; font-weight: 600; color: var(--brass);
+}
+.offdot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--brass);
+  box-shadow: 0 0 0 3px rgba(220, 168, 76, .18);
+}
+.offtext {
+  margin: 0 0 13px; font-size: 12.5px; line-height: 1.65; color: var(--paper);
+  max-width: 640px;
+}
+.offtext code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11.5px; padding: 1px 5px; border-radius: 5px;
+  background: var(--ink); color: var(--brass);
+}
+.offrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.offrow .text { flex: 1; min-width: 240px; }
+.offnote { margin-top: 11px; font-size: 11.5px; color: var(--muted); }
