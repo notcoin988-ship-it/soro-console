@@ -186,7 +186,9 @@ export default function Playground() {
   const [opened, setOpened] = useState<Set<number>>(new Set());
 
   const logRef = useRef<HTMLDivElement>(null);
-  const sourceRef = useRef<EventSource | null>(null);
+  // Отмена текущего потока: уход с экрана или новый вопрос обрывают
+  // предыдущий запрос, иначе его дельты продолжат дописываться в ответ.
+  const abortRef = useRef<AbortController | null>(null);
   // Ветка диалога: по ней бэкенд помнит предыдущие реплики. Одна на
   // вкладку и на всё время её жизни — перезагрузка страницы начинает
   // разговор заново, как и должно быть на тестовом экране.
@@ -228,12 +230,12 @@ export default function Playground() {
 
   // Уходим с экрана посреди генерации — соединение закрываем, иначе
   // бэкенд продолжит гнать поток в никуда.
-  useEffect(() => () => sourceRef.current?.close(), []);
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   async function ask(text: string) {
     if (!text.trim() || busy) return;
 
-    sourceRef.current?.close();
+    abortRef.current?.abort();
     // предыдущая пара уезжает в историю, а не стирается
     if (asked) {
       setHistory((current) => [
@@ -282,43 +284,85 @@ export default function Playground() {
       return;
     }
 
-    // Воркспейс параметром, а не заголовком: EventSource заголовки слать
-    // не умеет. Бэкенд читает `ws` из query — так же, как для виджета.
-    const source = new EventSource(
-      `${API_BASE}/playground/stream?message_id=${encodeURIComponent(messageId)}` +
-        (workspace ? `&ws=${encodeURIComponent(workspace)}` : ""),
-    );
-    sourceRef.current = source;
+    // ПОТОК ЧИТАЕМ ЧЕРЕЗ fetch, А НЕ EventSource.
+    //
+    // EventSource проще, но не умеет отправлять заголовки вовсе — а они
+    // нужны: бесплатный туннель без `ngrok-skip-browser-warning` отдаёт
+    // браузеру HTML-заглушку вместо потока, и площадка на выложенной
+    // консоли обрывалась на «Соединение прервано». Заголовок воркспейса
+    // здесь тоже уходит по-человечески, а не параметром в адресе.
+    //
+    // Взамен приходится разбирать кадры SSE самим: они разделены пустой
+    // строкой, внутри строки `event:` и `data:`.
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-    source.addEventListener("retrieval", (event) => {
-      const data = JSON.parse((event as MessageEvent).data);
-      setFragments(data.fragments);
-      setBelowThreshold(!data.has_answer);
-      setStage(data.has_answer ? "generation" : "retrieval");
-    });
+    try {
+      const response = await fetch(
+        `${API_BASE}/playground/stream?message_id=${encodeURIComponent(messageId)}`,
+        {
+          headers: {
+            Accept: "text/event-stream",
+            "ngrok-skip-browser-warning": "1",
+            ...(workspace ? { "X-Workspace": workspace } : {}),
+          },
+          credentials: "same-origin",
+          signal: controller.signal,
+        },
+      );
+      if (!response.ok || response.body === null) {
+        throw new Error(await response.text());
+      }
 
-    source.addEventListener("delta", (event) => {
-      const data = JSON.parse((event as MessageEvent).data);
-      setAnswer((current) => current + data.text);
-    });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-    source.addEventListener("final", (event) => {
-      const data = JSON.parse((event as MessageEvent).data);
-      if (data.text) setAnswer(data.text);
-      setTelemetry(data.telemetry);
-      setEscalated(data.escalated);
-      setStage("done");
-      source.close();
-    });
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
 
-    source.addEventListener("error", (event) => {
-      // событие error приходит и от сервера (наше), и от самого
-      // EventSource при обрыве — различаем по наличию данных
-      const raw = (event as MessageEvent).data;
-      setError(raw ? JSON.parse(raw).detail : "Соединение прервано");
+        // Кадры отделены пустой строкой. Последний кусок может быть
+        // неполным — оставляем его в буфере до следующего чтения.
+        let split = buffer.indexOf("\n\n");
+        while (split !== -1) {
+          const frame = buffer.slice(0, split);
+          buffer = buffer.slice(split + 2);
+          split = buffer.indexOf("\n\n");
+
+          let name = "message";
+          const payload: string[] = [];
+          for (const line of frame.split("\n")) {
+            if (line.startsWith("event:")) name = line.slice(6).trim();
+            else if (line.startsWith("data:")) payload.push(line.slice(5).trim());
+          }
+          if (payload.length === 0) continue;
+          const data = JSON.parse(payload.join("\n"));
+
+          if (name === "retrieval") {
+            setFragments(data.fragments);
+            setBelowThreshold(!data.has_answer);
+            setStage(data.has_answer ? "generation" : "retrieval");
+          } else if (name === "delta") {
+            setAnswer((current) => current + data.text);
+          } else if (name === "final") {
+            if (data.text) setAnswer(data.text);
+            setTelemetry(data.telemetry);
+            setEscalated(data.escalated);
+            setStage("done");
+          } else if (name === "error") {
+            setError(data.detail ?? "Ошибка на стороне сервера");
+            setStage("error");
+          }
+        }
+      }
+    } catch (err) {
+      // Отмена — это уход с экрана или новый вопрос, а не поломка.
+      if ((err as Error).name === "AbortError") return;
+      setError(err instanceof Error ? err.message : "Соединение прервано");
       setStage("error");
-      source.close();
-    });
+    }
   }
 
   return (
