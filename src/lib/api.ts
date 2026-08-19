@@ -84,6 +84,19 @@ function workspaceHeader(): Record<string, string> {
   return slug ? { "X-Workspace": slug } : {};
 }
 
+/** Заголовки, которые нужны каждому запросу к API.
+ *
+ *  `ngrok-skip-browser-warning` — обход страницы-предупреждения бесплатного
+ *  туннеля. Без него ngrok отдаёт браузеру HTML-заглушку вместо ответа,
+ *  причём БЕЗ CORS-заголовков, и выложенная отдельно консоль получает
+ *  «Failed to fetch» на каждом запросе. Значение неважно — важно само
+ *  наличие заголовка.
+ *
+ *  На своём домене заголовок безвреден: сервер его игнорирует. */
+function apiHeaders(): Record<string, string> {
+  return { "ngrok-skip-browser-warning": "1", ...workspaceHeader() };
+}
+
 export interface WorkspaceRow {
   slug: string;
   name: string;
@@ -124,7 +137,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     // уехал бы в чужой банк.
     headers: {
       "Content-Type": "application/json",
-      ...workspaceHeader(),
+      ...apiHeaders(),
       ...(init?.headers as Record<string, string> | undefined),
     },
   });
@@ -175,7 +188,7 @@ export async function uploadFile(file: File): Promise<Doc> {
     // выдавать его вместе с конкретным origin — лишнее послабление ради
     // кук, которых нет. Браузер иначе блокирует все запросы на preflight.
     credentials: "same-origin",
-    headers: workspaceHeader(),
+    headers: apiHeaders(),
     body: form,
   });
   if (!response.ok) throw new ApiError(response.status, await response.text());
@@ -506,7 +519,7 @@ export async function deleteDocument(id: number): Promise<void> {
     // выдавать его вместе с конкретным origin — лишнее послабление ради
     // кук, которых нет. Браузер иначе блокирует все запросы на preflight.
     credentials: "same-origin",
-    headers: workspaceHeader(),
+    headers: apiHeaders(),
   });
   if (!response.ok) throw new ApiError(response.status, await response.text());
 }
@@ -517,7 +530,7 @@ export async function deleteDocument(id: number): Promise<void> {
 export async function deleteSite(host: string): Promise<{ deleted: number }> {
   const response = await fetch(
     `${API_BASE}/documents?host=${encodeURIComponent(host)}`,
-    { method: "DELETE", credentials: "same-origin", headers: workspaceHeader() },
+    { method: "DELETE", credentials: "same-origin", headers: apiHeaders() },
   );
   if (!response.ok) throw new ApiError(response.status, await response.text());
   return (await response.json()) as { deleted: number };

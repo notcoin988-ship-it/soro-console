@@ -264,6 +264,8 @@ export default function Playground() {
         // банк по умолчанию, а не тот, что выбран в шапке.
         headers: {
           "Content-Type": "application/json",
+          // Обход заглушки бесплатного туннеля — см. apiHeaders в lib/api.
+          "ngrok-skip-browser-warning": "1",
           ...(workspace ? { "X-Workspace": workspace } : {}),
         },
         // credentials НЕ включаем: кук нет, а с другого домена режим
