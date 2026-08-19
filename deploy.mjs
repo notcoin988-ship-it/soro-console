@@ -1,19 +1,17 @@
 // Публикация собранной консоли в ветку `gh-pages`.
 //
 // ЗАЧЕМ СКРИПТ, А НЕ ACTIONS. Автосборка при push требует у токена право
-// `workflow`, которого у команды нет — GitHub отклоняет сам файл
-// воркфлоу. Здесь то же самое делается локально: собрать и положить
-// готовую папку в отдельную ветку, откуда Pages её и раздаёт.
+// `workflow`, которого у команды нет — GitHub отклоняет сам файл воркфлоу
+// («refusing to allow an OAuth App to create or update workflow»). Здесь
+// то же самое делается локально.
 //
-// ПОЧЕМУ ОТДЕЛЬНАЯ ВЕТКА. В `main` лежат исходники, и держать рядом с
-// ними собранный `dist` — значит коммитить его при каждой правке и ловить
-// конфликты в файлах, которые никто не читает.
+// ПОЧЕМУ ВРЕМЕННЫЙ РЕПОЗИТОРИЙ, А НЕ WORKTREE. Первая версия делала
+// `git worktree add` и `checkout --orphan` — и падала: orphan-ветка в
+// присоединённом дереве ведёт себя непредсказуемо. Отдельный маленький
+// репозиторий во временной папке проще и не трогает рабочее дерево:
+// история сборок не нужна, нужна последняя версия файлов.
 //
-//     node deploy.mjs
-//
-// Ветка перезаписывается целиком: история сборок не нужна, нужна
-// последняя. Рабочее дерево при этом не трогается — используется
-// `git worktree` во временной папке.
+//     npm run deploy
 
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, cpSync, writeFileSync } from "node:fs";
@@ -22,15 +20,17 @@ import { join } from "node:path";
 
 const BRANCH = "gh-pages";
 
-function git(...args) {
-  return execFileSync("git", args, { stdio: ["ignore", "pipe", "inherit"] })
+function git(cwd, ...args) {
+  return execFileSync("git", ["-C", cwd, ...args], {
+    stdio: ["ignore", "pipe", "inherit"],
+  })
     .toString()
     .trim();
 }
 
 // Имя репозитория задаёт базовый путь: сайт живёт в подпапке, и без
 // префикса браузер ищет ассеты в корне домена, где их нет.
-const remote = git("remote", "get-url", "origin");
+const remote = git(".", "remote", "get-url", "origin");
 const repo = remote.replace(/\.git$/, "").split("/").pop();
 console.log(`репозиторий: ${repo}`);
 
@@ -43,39 +43,35 @@ execFileSync("npm", ["run", "build"], {
 
 const work = mkdtempSync(join(tmpdir(), "soro-pages-"));
 try {
-  // Ветку каждый раз создаём заново от пустого состояния: иначе к сборке
-  // прилипают файлы предыдущей, которых больше нет в `dist`.
-  try {
-    git("worktree", "add", "--detach", work);
-  } catch {
-    console.error("не удалось создать worktree");
-    throw new Error("worktree");
-  }
-
-  execFileSync("git", ["-C", work, "checkout", "--orphan", BRANCH], { stdio: "inherit" });
-  execFileSync("git", ["-C", work, "rm", "-rf", "--quiet", "."], { stdio: "inherit" });
-
   cpSync("dist", work, { recursive: true });
-  // Без этого файла GitHub Pages прогоняет страницу через Jekyll и
-  // выбрасывает всё, что начинается с подчёркивания.
+  // Без этого файла Pages прогоняет сайт через Jekyll и выбрасывает всё,
+  // что начинается с подчёркивания.
   writeFileSync(join(work, ".nojekyll"), "");
 
-  execFileSync("git", ["-C", work, "add", "-A"], { stdio: "inherit" });
-  execFileSync(
-    "git",
-    ["-C", work, "commit", "-q", "-m", `Сборка консоли ${new Date().toISOString()}`],
-    { stdio: "inherit" },
+  git(work, "init", "-q");
+  git(work, "checkout", "-q", "-b", BRANCH);
+  git(work, "remote", "add", "origin", remote);
+  git(work, "add", "-A");
+  git(
+    work,
+    "-c",
+    "user.email=deploy@zehnlab.ai",
+    "-c",
+    "user.name=soro-deploy",
+    "commit",
+    "-q",
+    "-m",
+    `Сборка консоли ${new Date().toISOString()}`,
   );
+  // force: ветка содержит только последнюю сборку, сливать нечего.
   execFileSync("git", ["-C", work, "push", "-f", "origin", `HEAD:${BRANCH}`], {
     stdio: "inherit",
   });
 
-  console.log(`\nготово. Включите Pages: Settings → Pages → Deploy from a branch → ${BRANCH} / (root)`);
+  console.log(
+    `\nготово: https://<аккаунт>.github.io/${repo}/` +
+      `\nPages должен быть включён: Settings → Pages → Deploy from a branch → ${BRANCH} / (root)`,
+  );
 } finally {
   rmSync(work, { recursive: true, force: true });
-  try {
-    git("worktree", "prune");
-  } catch {
-    /* worktree мог не создаться — тогда и убирать нечего */
-  }
 }
