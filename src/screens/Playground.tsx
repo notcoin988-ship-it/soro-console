@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import { API_BASE, getWorkspace } from "../lib/api";
+import { API_BASE, currentWorkspace, getWorkspace } from "../lib/api";
 
 // Экран 03 «Площадка · стеклянный ящик».
 //
@@ -253,12 +253,23 @@ export default function Playground() {
     setOpened(new Set());
     setStage("request");
 
+    // Воркспейс читаем один раз: он нужен и для POST, и для потока ниже.
+    const workspace = currentWorkspace();
     let messageId: string;
     try {
       const response = await fetch(`${API_BASE}/playground/messages`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        // Воркспейс идёт и отсюда: этот fetch собран вручную, мимо
+        // `request()` из lib/api, и без заголовка площадка спрашивала бы
+        // банк по умолчанию, а не тот, что выбран в шапке.
+        headers: {
+          "Content-Type": "application/json",
+          ...(workspace ? { "X-Workspace": workspace } : {}),
+        },
+        // credentials НЕ включаем: кук нет, а с другого домена режим
+        // "include" требует Access-Control-Allow-Credentials и валит
+        // запрос ещё на preflight. См. комментарий в lib/api.ts.
+        credentials: "same-origin",
         body: JSON.stringify({ text, thread_id: threadId }),
       });
       if (!response.ok) throw new Error(await response.text());
@@ -269,8 +280,11 @@ export default function Playground() {
       return;
     }
 
+    // Воркспейс параметром, а не заголовком: EventSource заголовки слать
+    // не умеет. Бэкенд читает `ws` из query — так же, как для виджета.
     const source = new EventSource(
-      `${API_BASE}/playground/stream?message_id=${encodeURIComponent(messageId)}`,
+      `${API_BASE}/playground/stream?message_id=${encodeURIComponent(messageId)}` +
+        (workspace ? `&ws=${encodeURIComponent(workspace)}` : ""),
     );
     sourceRef.current = source;
 
