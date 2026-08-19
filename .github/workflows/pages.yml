@@ -1,0 +1,49 @@
+# Сборка консоли и публикация на GitHub Pages.
+#
+# АДРЕС БЭКЕНДА СЮДА НЕ ЗАШИВАЕТСЯ. Бэкенд живёт на машине команды за
+# туннелем, а бесплатный туннель выдаёт новый адрес при каждом запуске.
+# Поэтому консоль берёт адрес из параметра `?api=` при первом открытии и
+# запоминает его — пересобирать ради смены адреса ничего не нужно.
+name: Deploy console to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # base обязателен: сайт живёт в подпапке с именем репозитория.
+      - run: npm run build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

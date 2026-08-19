@@ -1,0 +1,297 @@
+/* Наши добавления к эталону.
+   Всё, что есть в прототипе, лежит в prototype.css и не редактируется.
+   Здесь — только то, чего в статичном прототипе быть не могло: поля
+   загрузки файлов, сообщения об ошибках, живые состояния экранов. */
+
+/* Бейдж «ждут оператора» в меню. Эскалация случается, пока оператор
+   смотрит другой экран, и узнать о ней он должен до того, как откроет
+   инбокс, а не после. */
+.navbadge {
+  margin-left: auto; min-width: 18px; padding: 1px 6px;
+  border-radius: 99px; background: var(--rose); color: #fff;
+  font-size: 10.5px; font-weight: 600; text-align: center;
+}
+
+/* --- состояния экранов: читаю / пусто / сломалось --- */
+
+/* В прототипе таких состояний нет: там всё нарисовано и всегда полное.
+   Вид общий для всех семи экранов — иначе «пусто» на каждом выглядит
+   по-своему, и оператор каждый раз заново решает, поломка это или нет. */
+.state {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 26px 18px; text-align: center;
+  font-size: 12.5px; color: var(--muted);
+}
+.state b { font-size: 13.5px; color: var(--paper); font-weight: 600; }
+.state span { max-width: 380px; line-height: 1.6; }
+.state.loading { color: var(--muted2); }
+.state.failed { color: var(--rose-hi); }
+.state.failed .btn { margin-top: 4px; }
+
+/* Внутри таблицы состояние живёт в ячейке — отступы там свои. */
+td > .state { padding: 16px 0; }
+
+/* --- выбор банка в шапке --- */
+
+/* В эталоне кнопка воркспейса нарисована: банк один и зашит в разметку.
+   Здесь под ней список банков стенда и форма «Добавить банк». */
+.wspick { position: relative; }
+.wsmenu {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 40;
+  width: 268px; padding: 6px;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 13px; box-shadow: 0 18px 44px rgba(0, 0, 0, .5);
+}
+.wsrow {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: none; border: 0; border-radius: 9px; padding: 9px 11px;
+  color: var(--paper); font: inherit;
+}
+.wsrow:hover { background: var(--panel2); }
+.wsrow.on { background: var(--raise); }
+.wsrow b { display: block; font-size: 12.5px; font-weight: 600; }
+.wsrow small {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px; color: var(--muted2);
+}
+.wsrow.add { color: var(--rose-hi); font-size: 12.5px; }
+.wsadd { display: flex; flex-direction: column; gap: 7px; padding: 9px 11px; }
+.wsactions { display: flex; gap: 7px; }
+.wsempty {
+  padding: 9px 11px; font-size: 11.5px; color: var(--muted2);
+}
+
+/* --- экран 05: состояние каналов --- */
+
+/* В эталоне карточка канала заканчивается описанием: там всё всегда
+   работает. На стенде под описанием нужна правда — что именно не так и
+   сколько диалогов пришло. */
+.chnote {
+  margin-top: auto; padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.chstate { font-size: 11.5px; line-height: 1.5; color: var(--muted); }
+.chstate.warn { color: var(--brass); }
+.chactions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.chactions .btn { text-decoration: none; }
+
+/* --- экран 06: инбокс оператора --- */
+
+/* В эталоне эти куски свёрстаны инлайновыми стилями прямо в разметке
+   (заголовок секции очереди, шапка переписки, лента, подвал). Значения
+   перенесены один в один — просто получили имена, потому что в React
+   повторять их в трёх местах нечем. */
+.qhead {
+  padding: 13px 14px; border-bottom: 1px solid var(--line-soft);
+  font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted2);
+}
+.qhead + .qempty, .qempty {
+  padding: 12px 14px; font-size: 11.5px; color: var(--muted2);
+  text-align: center;
+}
+.convhead {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding-bottom: 14px; border-bottom: 1px solid var(--line-soft);
+}
+.convlog {
+  padding: 16px 0; display: flex; flex-direction: column; gap: 14px;
+  max-height: 46vh; overflow-y: auto;
+}
+.convlog::-webkit-scrollbar { width: 5px; }
+.convlog::-webkit-scrollbar-thumb { background: var(--line); border-radius: 9px; }
+.convfoot { border-top: 1px solid var(--line-soft); padding-top: 14px; }
+
+/* Время, канал и латентность у реплики. В эталоне их нет: там переписка
+   нарисована и вся «сегодняшняя». В живом склеенном диалоге видно, что
+   одна реплика пришла вчера из Telegram, а следующая — сегодня из
+   виджета, и без этого оператор читает не тот разговор, что был. */
+.msgmeta {
+  display: block; margin-top: 6px;
+  font-size: 10px; color: var(--muted2); letter-spacing: .02em;
+}
+.msg.u .msgmeta { color: rgba(255, 255, 255, .65); text-align: right; }
+
+/* Подпись оператора в ленте: в эталоне таких реплик нет — там переписка
+   обрывается на эскалации, — но в живом диалоге они есть, и отличать их
+   от ответов бота обязательно. */
+.opfrom {
+  display: block; font-size: 9.5px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ok); margin-bottom: 4px;
+}
+
+/* Подсказка оператору — фрагменты, на которых бот сдался. */
+.hintrow { margin-top: 10px; }
+.hintsrc {
+  font-size: 10.5px; color: var(--rose-hi); margin-bottom: 3px;
+}
+.hinttext {
+  font-size: 12.5px; color: var(--muted); line-height: 1.6;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.replyrow {
+  display: flex; gap: 8px; align-items: flex-end; margin-top: 14px;
+}
+.replyrow .text { flex: 1; resize: vertical; min-height: 40px; }
+
+/* --- экран 04: переключатель «сценарий / живой диалог» --- */
+
+/* В прототипе экран 04 умеет одно: проиграть нарисованный сценарий.
+   Переключатель повторяет вид языкового тумблера из шапки эталона —
+   заводить вторую форму для той же роли незачем. */
+.modetog {
+  display: inline-flex; border: 1px solid var(--line); border-radius: 99px;
+  overflow: hidden; background: var(--panel2);
+}
+.modetog button {
+  background: none; border: 0; color: var(--muted); cursor: pointer;
+  font: inherit; font-size: 11.5px; padding: 6px 13px;
+  transition: background .13s, color .13s;
+}
+.modetog button:hover { color: var(--paper); }
+.modetog button.on { background: var(--rose); color: #fff; }
+
+/* Полоса идентичностей: два внешних id и один человек. Единственное
+   место в демо, где склейку контактов видно глазами. */
+.omniids {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin: -6px 0 14px;
+}
+.idwho { font-size: 12px; font-weight: 600; }
+.idchip {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 99px;
+  background: var(--panel); padding: 3px 9px;
+}
+.idchip b { color: var(--rose-hi); font-weight: 500; }
+
+/* --- формы добавления источников на экране 02 --- */
+.text {
+  background: var(--panel2); border: 1px solid var(--line); border-radius: 9px;
+  padding: 9px 11px; color: var(--paper); font: inherit; font-size: 12.5px;
+}
+.text:focus { outline: none; border-color: var(--rose-dim); }
+.text::placeholder { color: var(--muted2); }
+
+/* Загрузка файла: настоящий input[type=file] лежит ПОВЕРХ кнопки и
+   прозрачен. Человек видит кнопку эталона, а кликает физически по полю —
+   диалог открывает сам браузер, никакого JS и никаких посредников.
+
+   Почему так, а не скрытое поле с кнопкой или <label for>: и
+   программный `input.click()`, и активация по label в Chrome могут молча
+   не сработать (в Edge при этом всё открывается) — ошибки никакой, диалог
+   просто не появляется. Клик по самому полю обмануть нечем.
+
+   Прятать сам input приходится потому, что его надпись рисует браузер по
+   локали системы: на китайской сборке Windows это «选择文件», и ни
+   перевести, ни заменить её из CSS нельзя. */
+.upload { position: relative; display: inline-block; }
+.upload .file {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; font-size: 0;
+}
+.upload .file:disabled { cursor: default; }
+/* подсветка кнопки при наведении на невидимое поле поверх неё */
+.upload .file:hover + .btn { filter: brightness(1.1); }
+.upload .file:focus-visible + .btn { outline: 2px solid var(--rose); outline-offset: 2px; }
+/* .btn здесь <span>, а он строчный: без inline-block обёртка не получает
+   его высоту с паддингами, и поле поверх выходит ниже кнопки — по краям
+   клик уходит мимо.
+   pointer-events: none — чтобы кнопка не перехватывала клик на себя. */
+.upload .btn { display: inline-block; pointer-events: none; }
+.upload .btn:disabled { opacity: .5; }
+
+.fail { color: var(--rose-hi); font-size: 12px; }
+.linkbtn {
+  background: none; border: 0; color: var(--muted2); font: inherit;
+  font-size: 11.5px; cursor: pointer; padding: 0;
+}
+.linkbtn:hover { color: var(--rose-hi); }
+
+/* --- подтверждение действия (в эталоне диалога нет, палитра его) --- */
+
+.backdrop {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(9, 4, 8, .72);
+  animation: fade .16s ease;
+}
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+
+.modal {
+  width: min(420px, 100%);
+  padding: 22px 24px 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255,255,255,.04);
+  animation: rise .18s cubic-bezier(.2, .7, .3, 1);
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px) scale(.985) }
+  to   { opacity: 1; transform: none }
+}
+
+.modal h2 {
+  font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 500;
+  margin: 0 0 8px; letter-spacing: -.005em;
+}
+.modal p {
+  margin: 0 0 18px; font-size: 12.5px; line-height: 1.5; color: var(--muted);
+}
+.modal-actions { display: flex; gap: 9px; justify-content: flex-end; }
+
+/* --- экран 01: переключатель, который нельзя выключить --- */
+
+/* «Отвечать только по базе знаний» показываем, но не даём трогать: это
+   основа продукта, а не настройка. Выглядит включённым и слегка
+   приглушённым, курсор обычный — понятно, что кликать бесполезно. */
+.sw.locked { cursor: default; opacity: .55; }
+
+/* --- экран 03: фрагменты в стеклянной панели --- */
+
+/* В эталоне фрагменты были короткими выдержками, а настоящий чанк — 400
+   токенов, и один такой занимает панель целиком. Критерий приёмки
+   требует видеть СПРАВА ТРИ фрагмента со score, то есть сравнивать их
+   между собой; поэтому текст сворачивается до шести строк, а целиком
+   читается по клику. */
+.fragtxt {
+  display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical;
+  overflow: hidden; cursor: pointer;
+}
+.frag.open .fragtxt { -webkit-line-clamp: unset; }
+
+/* --- таблица базы знаний: корзина, шеврон, страницы сайта --- */
+
+/* Кнопка-иконка. Цвет задаётся здесь, а сама иконка рисуется
+   currentColor — поэтому наведение и блокировка работают без правил
+   для svg. */
+.iconbtn {
+  background: none; border: 0; padding: 4px; cursor: pointer;
+  color: var(--muted2); display: inline-flex; border-radius: 6px;
+  transition: color .13s, background .13s;
+}
+.iconbtn:hover { color: var(--rose-hi); background: var(--raise); }
+.iconbtn:disabled { opacity: .4; cursor: default; background: none; }
+.iconbtn:disabled:hover { color: var(--muted2); }
+
+/* Шеврон группы. Рисуем тем же приёмом, что и эталон в .ols::after —
+   квадрат из двух границ, повёрнутый на 45°, — чтобы не заводить вторую
+   иконочную систему ради одной стрелки. */
+.chev {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  width: 16px; height: 16px; flex: 0 0 16px; position: relative;
+}
+.chev::after {
+  content: ""; position: absolute; left: 3px; top: 4px;
+  width: 7px; height: 7px;
+  border-top: 1.5px solid var(--muted); border-right: 1.5px solid var(--muted);
+  transform: rotate(45deg); transition: transform .15s;
+}
+.chev:hover::after { border-color: var(--rose-hi); }
+.chev.open::after { transform: rotate(135deg); top: 2px; }
+
+/* Страницы внутри раскрытого сайта: приглушены и с отступом, чтобы
+   вложенность читалась без линий и рамок. */
+.sub td { background: var(--panel2); font-size: 12px; }
+.sub td:first-child { padding-left: 40px; }
